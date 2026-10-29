@@ -37,7 +37,7 @@ const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
 let product={name:'Sac élégant bleu nuit',description:'Un sac chic et pratique pour compléter vos looks du quotidien. Un design élégant et des détails raffinés.',price:149,old_price:199,discount:'Offre spéciale',color:'Bleu nuit',contents:'À confirmer',reference:'SL-001',stock:'À confirmer',image_url:'',image_urls:[],whatsapp:'212657418460'};
 let selectedColor='';
 const setText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value??''};
-const normalizeWhatsApp=value=>String(value||'212657418460').replace(/\\D/g,'');
+const normalizeWhatsApp=value=>String(value||'212657418460').replace(/\D/g,'');
 function renderProduct(p){
  product={...product,...p};
  setText('productName',product.name);setText('productDesc',product.description);setText('productPrice',Number(product.price).toLocaleString('fr-MA')+' DH');
