@@ -56,6 +56,26 @@ function renderProduct(p){
 }
 setText('year',new Date().getFullYear());
 try{const {data,error}=await supabase.from('products').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();if(!error&&data)renderProduct(data)}catch(e){console.warn('Database unavailable; showing fallback product.',e)}
-document.getElementById('orderForm').addEventListener('submit',function(e){e.preventDefault();const name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),city=document.getElementById('city').value.trim(),color=document.getElementById('color').value.trim()||selectedColor||product.color,address=document.getElementById('address').value.trim(),extra=document.getElementById('extra').value.trim();const message='Salam SAC LUXURY, bghit ncommandi had produit:\\nProduit: '+product.name+'\\nPrix: '+product.price+' DH\\nNom: '+name+'\\nTéléphone: '+phone+'\\nVille: '+city+'\\nCouleur/modèle: '+color+'\\nAdresse: '+address+(extra?'\\nNote: '+extra:'');window.open('https://wa.me/'+normalizeWhatsApp(product.whatsapp)+'?text='+encodeURIComponent(message),'_blank','noopener')});
+document.getElementById('orderForm').addEventListener('submit',function(e){
+ e.preventDefault();
+ const name=document.getElementById('name').value.trim();
+ const phone=document.getElementById('phone').value.trim();
+ const city=document.getElementById('city').value.trim();
+ const color=document.getElementById('color').value.trim()||selectedColor||product.color;
+ const address=document.getElementById('address').value.trim();
+ const extra=document.getElementById('extra').value.trim();
+ const images=Array.isArray(product.image_urls)&&product.image_urls.length?product.image_urls:(product.image_url?[product.image_url]:[]);
+ const imageLine=images.length?'\nPhoto du produit: '+images[0]:'\nPhoto du produit: non disponible';
+ const message='Salam SAC LUXURY, bghit ncommandi had produit:\n'+
+ 'Produit: '+product.name+'\n'+
+ 'Prix: '+product.price+' DH\n'+
+ 'Nom: '+name+'\n'+
+ 'Téléphone: '+phone+'\n'+
+ 'Ville: '+city+'\n'+
+ 'Couleur/modèle: '+color+'\n'+
+ 'Adresse: '+address+
+ (extra?'\nNote: '+extra:'')+imageLine;
+ window.open('https://wa.me/'+normalizeWhatsApp(product.whatsapp)+'?text='+encodeURIComponent(message),'_blank','noopener');
+});
 </script>
 </body></html>
