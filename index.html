@@ -68,7 +68,9 @@ document.getElementById('orderForm').addEventListener('submit',function(e){
  const imageLine=images.length?'\nPhoto du produit: '+images[0]:'\nPhoto du produit: non disponible';
  const message='Salam SAC LUXURY, bghit ncommandi had produit:\n'+
  'Produit: '+product.name+'\n'+
- 'Prix: '+product.price+' DH\n'+
+ 'Prix produit: '+product.price+' DH\n'+
+ 'Livraison: 20 DH\n'+
+ 'Total à payer: '+(Number(product.price)+20)+' DH\n'+
  'Nom: '+name+'\n'+
  'Téléphone: '+phone+'\n'+
  'Ville: '+city+'\n'+
