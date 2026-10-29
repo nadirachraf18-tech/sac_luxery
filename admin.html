@@ -27,7 +27,7 @@
 <div class="field"><label for="contents">Contenu / matière</label><input id="contents"></div>
 <div class="field"><label for="stock">Disponibilité</label><input id="stock"></div>
 <div class="field"><label for="whatsapp">WhatsApp (format international)</label><input id="whatsapp" inputmode="tel" placeholder="212657418460"></div>
-<div class="field full"><label for="imageFile">Photo du produit (JPG, PNG, WEBP ou AVIF — 5 Mo maximum)</label><input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif"><input id="imageUrl" type="hidden"><p class="tiny muted">Choisissez une photo depuis votre téléphone ou ordinateur. Elle sera envoyée automatiquement et affichée dans la boutique.</p><img id="imagePreview" class="hidden" alt="Aperçu de la photo" style="max-width:180px;max-height:180px;object-fit:contain;border-radius:10px"></div>
+<div class="field full"><label for="imageFile">Photos du produit et de ses couleurs (plusieurs images)</label><input id="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple><input id="imageUrl" type="hidden"><input id="imageUrls" type="hidden"><p class="tiny muted">Sélectionnez plusieurs photos depuis votre téléphone. La première sera la photo principale; les autres serviront à montrer les couleurs et les détails. 5 Mo maximum par photo.</p><div id="imagePreviews" style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
 <div class="field full"><label><input id="active" type="checkbox" checked style="width:auto"> Produit visible sur la boutique</label></div>
 <div class="field full"><div class="actions"><button class="btn" type="submit">Enregistrer le produit</button><button id="cancelEdit" class="btn light" type="button">Annuler</button></div></div>
 </form></div>
@@ -49,25 +49,27 @@ async function verifyAdmin(){
 }
 $('loginForm').addEventListener('submit',async e=>{e.preventDefault();const {error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){notice('Connexion impossible : '+error.message,'error');return}await verifyAdmin()});
 $('logout').addEventListener('click',async()=>{await supabase.auth.signOut();showSession(false);notice('Déconnexion réussie.','ok')});
-function clearForm(){ $('productForm').reset();$('productId').value='';$('imageUrl').value='';$('imagePreview').src='';$('imagePreview').classList.add('hidden');$('active').checked=true;$('formTitle').textContent='Ajouter un produit'; }
-$('imageFile').addEventListener('change',()=>{const file=$('imageFile').files[0];if(!file){$('imagePreview').classList.add('hidden');return}if(!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type)||file.size>5*1024*1024){notice('Choisissez une image JPG, PNG, WEBP ou AVIF de 5 Mo maximum.','error');$('imageFile').value='';return} $('imagePreview').src=URL.createObjectURL(file);$('imagePreview').classList.remove('hidden');});
+let existingImageUrls=[];
+function drawPreviews(urls=[]){const root=$('imagePreviews');root.innerHTML='';urls.forEach((url,i)=>{const img=document.createElement('img');img.src=url;img.alt='Photo '+(i+1);img.style.cssText='width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid #ddd';root.appendChild(img)})}
+function clearForm(){ $('productForm').reset();$('productId').value='';$('imageUrl').value='';$('imageUrls').value='';existingImageUrls=[];drawPreviews([]);$('active').checked=true;$('formTitle').textContent='Ajouter un produit'; }
+$('imageFile').addEventListener('change',()=>{const files=Array.from($('imageFile').files||[]);if(files.some(file=>!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type)||file.size>5*1024*1024)){notice('Chaque photo doit être JPG, PNG, WEBP ou AVIF et ne pas dépasser 5 Mo.','error');$('imageFile').value='';return}drawPreviews([...existingImageUrls,...files.map(file=>URL.createObjectURL(file))]);});
 $('newProduct').addEventListener('click',clearForm);$('cancelEdit').addEventListener('click',clearForm);$('refresh').addEventListener('click',loadProducts);
 $('productForm').addEventListener('submit',async e=>{
  e.preventDefault();
  const id=$('productId').value;
- let imageUrl=$('imageUrl').value.trim();
- const file=$('imageFile').files[0];
- if(file){
-  if(!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type)||file.size>5*1024*1024){notice('Choisissez une image JPG, PNG, WEBP ou AVIF de 5 Mo maximum.','error');return}
-  const ext=({ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif' })[file.type];
+ let imageUrls=[...existingImageUrls];
+ const files=Array.from($('imageFile').files||[]);
+ for(const file of files){
+  if(!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type)||file.size>5*1024*1024){notice('Chaque photo doit être JPG, PNG, WEBP ou AVIF et ne pas dépasser 5 Mo.','error');return}
+  const ext=({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/avif':'avif'})[file.type];
   const path=crypto.randomUUID()+'.'+ext;
-  notice('Envoi de la photo en cours…');
+  notice('Envoi des photos en cours…');
   const {error:uploadError}=await supabase.storage.from('product-images').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});
-  if(uploadError){notice('Impossible d’envoyer la photo : '+uploadError.message,'error');return}
-  const {data:publicData}=supabase.storage.from('product-images').getPublicUrl(path);
-  imageUrl=publicData.publicUrl;
+  if(uploadError){notice('Impossible d’envoyer une photo : '+uploadError.message,'error');return}
+  imageUrls.push(supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl);
  }
- const payload={name:$('name').value.trim(),reference:$('reference').value.trim(),description:$('description').value.trim(),price:Number($('price').value),old_price:$('oldPrice').value===''?null:Number($('oldPrice').value),discount:$('discount').value.trim(),color:$('color').value.trim(),contents:$('contents').value.trim(),stock:$('stock').value.trim(),whatsapp:$('whatsapp').value.trim()||'212657418460',image_url:imageUrl,is_active:$('active').checked,updated_at:new Date().toISOString()};
+ const imageUrl=imageUrls[0]||'';
+ const payload={name:$('name').value.trim(),reference:$('reference').value.trim(),description:$('description').value.trim(),price:Number($('price').value),old_price:$('oldPrice').value===''?null:Number($('oldPrice').value),discount:$('discount').value.trim(),color:$('color').value.trim(),contents:$('contents').value.trim(),stock:$('stock').value.trim(),whatsapp:$('whatsapp').value.trim()||'212657418460',image_url:imageUrl,image_urls:imageUrls,is_active:$('active').checked,updated_at:new Date().toISOString()};
  const {error}=id?await supabase.from('products').update(payload).eq('id',id):await supabase.from('products').insert(payload);
  if(error){notice('Enregistrement impossible : '+error.message,'error');return}
  notice('Produit enregistré. La boutique sera mise à jour automatiquement.','ok');clearForm();await loadProducts();
@@ -83,7 +85,7 @@ async function loadProducts(){
   if(p.image_url){const img=document.createElement('img');img.src=p.image_url;img.alt='';left.appendChild(img)}
   const info=document.createElement('div');const name=document.createElement('strong');name.textContent=p.name;const meta=document.createElement('p');meta.textContent=Number(p.price).toLocaleString('fr-MA')+' DH • '+(p.reference||'Sans référence')+' • '+(p.is_active?'Visible':'Masqué');info.append(name,meta);left.appendChild(info);
   const actions=document.createElement('div');actions.className='actions';
-  const edit=document.createElement('button');edit.className='btn gold';edit.textContent='Modifier';edit.addEventListener('click',()=>{ $('productId').value=p.id;$('name').value=p.name;$('reference').value=p.reference||'';$('description').value=p.description||'';$('price').value=p.price;$('oldPrice').value=p.old_price??'';$('discount').value=p.discount||'';$('color').value=p.color||'';$('contents').value=p.contents||'';$('stock').value=p.stock||'';$('whatsapp').value=p.whatsapp||'212657418460';$('imageUrl').value=p.image_url||'';$('imageFile').value='';$('imagePreview').src=p.image_url||'';$('imagePreview').classList.toggle('hidden',!p.image_url);$('active').checked=p.is_active;$('formTitle').textContent='Modifier le produit';window.scrollTo({top:0,behavior:'smooth'});});
+  const edit=document.createElement('button');edit.className='btn gold';edit.textContent='Modifier';edit.addEventListener('click',()=>{ $('productId').value=p.id;$('name').value=p.name;$('reference').value=p.reference||'';$('description').value=p.description||'';$('price').value=p.price;$('oldPrice').value=p.old_price??'';$('discount').value=p.discount||'';$('color').value=p.color||'';$('contents').value=p.contents||'';$('stock').value=p.stock||'';$('whatsapp').value=p.whatsapp||'212657418460';$('imageUrl').value=p.image_url||'';existingImageUrls=Array.isArray(p.image_urls)&&p.image_urls.length?p.image_urls:(p.image_url?[p.image_url]:[]);$('imageUrls').value=JSON.stringify(existingImageUrls);$('imageFile').value='';drawPreviews(existingImageUrls);$('active').checked=p.is_active;$('formTitle').textContent='Modifier le produit';window.scrollTo({top:0,behavior:'smooth'});});
   const del=document.createElement('button');del.className='btn red';del.textContent='Supprimer';del.addEventListener('click',async()=>{if(!confirm('Supprimer « '+p.name+' » ?'))return;const {error}=await supabase.from('products').delete().eq('id',p.id);if(error){notice('Suppression impossible : '+error.message,'error');return}notice('Produit supprimé.','ok');await loadProducts()});
   actions.append(edit,del);row.append(left,actions);root.appendChild(row);
  });
