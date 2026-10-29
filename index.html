@@ -37,6 +37,7 @@ const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
 let product={name:'Sac élégant bleu nuit',description:'Un sac chic et pratique pour compléter vos looks du quotidien. Un design élégant et des détails raffinés.',price:149,old_price:199,discount:'Offre spéciale',color:'Bleu nuit',contents:'À confirmer',reference:'SL-001',stock:'À confirmer',image_url:'',image_urls:[],whatsapp:'212657418460'};
 let selectedColor='';
 const setText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value??''};
+const normalizeWhatsApp=value=>String(value||'212657418460').replace(/\\D/g,'');
 function renderProduct(p){
  product={...product,...p};
  setText('productName',product.name);setText('productDesc',product.description);setText('productPrice',Number(product.price).toLocaleString('fr-MA')+' DH');
@@ -51,10 +52,10 @@ function renderProduct(p){
  if(!selectedColor||!colors.includes(selectedColor))selectedColor=colors[0]||'';
  colors.forEach(color=>{const b=document.createElement('button');b.type='button';b.textContent=color;b.className=color===selectedColor?'selected':'';b.addEventListener('click',()=>{selectedColor=color;setText('colorValue',color);document.getElementById('color').value=color;colorRoot.querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b))});colorRoot.appendChild(b)});
  const msg='Salam, bghit n3ref aktar 3la '+product.name+' ('+product.price+' DH).';
- document.getElementById('whatsappTop').href='https://wa.me/'+product.whatsapp+'?text='+encodeURIComponent(msg);
+ document.getElementById('whatsappTop').href='https://wa.me/'+normalizeWhatsApp(product.whatsapp)+'?text='+encodeURIComponent(msg);
 }
 setText('year',new Date().getFullYear());
 try{const {data,error}=await supabase.from('products').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();if(!error&&data)renderProduct(data)}catch(e){console.warn('Database unavailable; showing fallback product.',e)}
-document.getElementById('orderForm').addEventListener('submit',function(e){e.preventDefault();const name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),city=document.getElementById('city').value.trim(),color=document.getElementById('color').value.trim()||selectedColor||product.color,address=document.getElementById('address').value.trim(),extra=document.getElementById('extra').value.trim();const message='Salam SAC LUXURY, bghit ncommandi had produit:\\nProduit: '+product.name+'\\nPrix: '+product.price+' DH\\nNom: '+name+'\\nTéléphone: '+phone+'\\nVille: '+city+'\\nCouleur/modèle: '+color+'\\nAdresse: '+address+(extra?'\\nNote: '+extra:'');window.open('https://wa.me/'+product.whatsapp+'?text='+encodeURIComponent(message),'_blank','noopener')});
+document.getElementById('orderForm').addEventListener('submit',function(e){e.preventDefault();const name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),city=document.getElementById('city').value.trim(),color=document.getElementById('color').value.trim()||selectedColor||product.color,address=document.getElementById('address').value.trim(),extra=document.getElementById('extra').value.trim();const message='Salam SAC LUXURY, bghit ncommandi had produit:\\nProduit: '+product.name+'\\nPrix: '+product.price+' DH\\nNom: '+name+'\\nTéléphone: '+phone+'\\nVille: '+city+'\\nCouleur/modèle: '+color+'\\nAdresse: '+address+(extra?'\\nNote: '+extra:'');window.open('https://wa.me/'+normalizeWhatsApp(product.whatsapp)+'?text='+encodeURIComponent(message),'_blank','noopener')});
 </script>
 </body></html>
