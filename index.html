@@ -54,7 +54,7 @@ function renderProduct(p){
  document.getElementById('whatsappTop').href='https://wa.me/'+product.whatsapp+'?text='+encodeURIComponent(msg);
 }
 setText('year',new Date().getFullYear());
-try{const {data,error}=await supabase.from('products').select('*').eq('is_active',true).order('created_at',{ascending:true}).limit(1).maybeSingle();if(!error&&data)renderProduct(data)}catch(e){console.warn('Database unavailable; showing fallback product.',e)}
+try{const {data,error}=await supabase.from('products').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1).maybeSingle();if(!error&&data)renderProduct(data)}catch(e){console.warn('Database unavailable; showing fallback product.',e)}
 document.getElementById('orderForm').addEventListener('submit',function(e){e.preventDefault();const name=document.getElementById('name').value.trim(),phone=document.getElementById('phone').value.trim(),city=document.getElementById('city').value.trim(),color=document.getElementById('color').value.trim()||selectedColor||product.color,address=document.getElementById('address').value.trim(),extra=document.getElementById('extra').value.trim();const message='Salam SAC LUXURY, bghit ncommandi had produit:\\nProduit: '+product.name+'\\nPrix: '+product.price+' DH\\nNom: '+name+'\\nTéléphone: '+phone+'\\nVille: '+city+'\\nCouleur/modèle: '+color+'\\nAdresse: '+address+(extra?'\\nNote: '+extra:'');window.open('https://wa.me/'+product.whatsapp+'?text='+encodeURIComponent(message),'_blank','noopener')});
 </script>
 </body></html>
